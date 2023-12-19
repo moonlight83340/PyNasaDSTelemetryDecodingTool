@@ -2,6 +2,7 @@ import struct
 import ctypes
 import datetime
 import Utils
+import argparse
 
 #Maximum length for an absolute path name
 OS_MAX_PATH_LEN = 32
@@ -163,11 +164,21 @@ class DSHKTelemetryDecoder:
             print("PassedPktCounter:", payload.PassedPktCounter)
             print("FilterTblFilename:", payload.FilterTblFilename)
 
-if Utils.is_little_endian():
-    print("The machine is little endian")
-else:
-    print("The machine is big endian")
-file_path = "C:/Users/perrotg/fork/PyNasaDSTelemetryDecodingTool/TestFile/ds_tlm.bin"
-decoder = DSHKTelemetryDecoder(file_path)
-decoder.process_binary_file()
-decoder.show_packets()
+def main():
+    if Utils.is_little_endian():
+        print("The machine is little endian")
+    else:
+        print("The machine is big endian")
+    parser = argparse.ArgumentParser(description='DS-HK Telemetry decoder python version')
+    parser.add_argument('command', choices=['run'], help='Command to execute')
+    parser.add_argument('file_path', type=str, help='Path to the file')
+    args = parser.parse_args()
+    if args.command == 'run':
+        decoder = DSHKTelemetryDecoder(args.file_path)
+        decoder.process_binary_file()
+        decoder.show_packets()
+    else:
+        print('Unknown command')
+
+if __name__ == "__main__":
+    main()
