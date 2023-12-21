@@ -7,6 +7,7 @@ import argparse
 #Maximum length for an absolute path name
 OS_MAX_PATH_LEN = 32
 
+## HK CCSDS_PrimaryHeader_t struct
 class CCSDS_PrimaryHeader_t(ctypes.Structure):
     _fields_ = [
         ('StreamId', ctypes.c_uint8 * 2),  # packet identifier word (stream ID)
@@ -14,11 +15,13 @@ class CCSDS_PrimaryHeader_t(ctypes.Structure):
         ('Length', ctypes.c_uint8 * 2)     # packet length word
     ]
 
+## HK CFE_MSG_TelemetrySecondaryHeader_t struct
 class CFE_MSG_TelemetrySecondaryHeader_t(ctypes.Structure):
     _fields_ = [
         ('Time', ctypes.c_uint8 * 6)  # Time, big endian: 4 byte seconds, 2 byte subseconds
     ]
-    
+ 
+## HK DS_HkTlm_Payload_t struct 
 class DS_HkTlm_Payload_t(ctypes.Structure):
     _fields_ = [
         ('CmdAcceptedCounter', ctypes.c_uint8),
@@ -40,11 +43,13 @@ class DS_HkTlm_Payload_t(ctypes.Structure):
         ('FilterTblFilename', ctypes.c_char * OS_MAX_PATH_LEN)
     ]
 
+## HK TelemetrySecondaryHeaderTime struct 
 class TelemetrySecondaryHeaderTime:
     def __init__(self, seconds=0, sub_seconds=0):
         self.seconds = seconds
         self.sub_seconds = sub_seconds
 
+## DS HK
 def get_telemetry_secondary_header_time(secondary_header):
     time = TelemetrySecondaryHeaderTime()
     time.seconds = 0
@@ -53,6 +58,7 @@ def get_telemetry_secondary_header_time(secondary_header):
     time.sub_seconds = (secondary_header.Time[4] << 8) | secondary_header.Time[5]
     return time
 
+## get the utc time from J2000 point
 def get_packet_datestamp_in_utc_time_from_j2000_time(seconds, sub_seconds):
     # J2000.0 in UTC
     j2000_time = datetime.datetime(2000, 1, 1, 11, 58, 55)
@@ -63,21 +69,14 @@ def get_packet_datestamp_in_utc_time_from_j2000_time(seconds, sub_seconds):
     # Calculate the date with seconds and subseconds
     new_time = j2000_time + datetime.timedelta(seconds=seconds, milliseconds=sub_seconds)
 
-    # Display the new date in UTC format
-    utc_time = new_time.strftime("%Y-%m-%d %H:%M:%S")
-    milliseconds = (new_time.microsecond // 1000) % 1000
-    print(f"Date/Time: {utc_time}.{milliseconds} UTC")
-
     return new_time
 
+## DS HK Telemetry decoder class
 class DSHKTelemetryDecoder:
     def __init__(self, file_path):
         self.file_path = file_path
         self.packets = []
-
-    def convert_to_decimal(self, bytes):
-        return (bytes[0] << 8) | bytes[1]
-
+    ## Process the binary file to read the HK telemetry
     def process_binary_file(self):
         with open(self.file_path, 'rb') as file:
             buffer = file.read()
@@ -116,14 +115,15 @@ class DSHKTelemetryDecoder:
                 current_packet['payload'] = payload
 
                 self.packets.append(current_packet)
-
+                
+    ## show the packets value
     def show_packets(self):
         for packet in self.packets:
             print("Packet:")
             primary_header = packet['primary_header']
-            stream_id = self.convert_to_decimal(primary_header.StreamId)
-            sequence = self.convert_to_decimal(primary_header.Sequence)
-            length = self.convert_to_decimal(primary_header.Length)
+            stream_id = Utils.convert_to_decimal(primary_header.StreamId)
+            sequence = Utils.convert_to_decimal(primary_header.Sequence)
+            length = Utils.convert_to_decimal(primary_header.Length)
             
             applicationID = stream_id & 0x07FF
             secondaryHeaderPresent = (stream_id & 0x0800) >> 11
@@ -146,6 +146,10 @@ class DSHKTelemetryDecoder:
                 print("Seconds:", telemetry_time.seconds)
                 print("Subseconds:", telemetry_time.sub_seconds)
                 utc_date_time = get_packet_datestamp_in_utc_time_from_j2000_time(telemetry_time.seconds, telemetry_time.sub_seconds)
+                    # Display the new date in UTC format
+                utc_time = utc_date_time.strftime("%Y-%m-%d %H:%M:%S")
+                milliseconds = (utc_date_time.microsecond // 1000) % 1000
+                print(f"Date/Time: {utc_time}.{milliseconds} UTC")
             payload = packet['payload']
             print("CmdAcceptedCounter:", payload.CmdAcceptedCounter)
             print("CmdRejectedCounter:", payload.CmdRejectedCounter)
