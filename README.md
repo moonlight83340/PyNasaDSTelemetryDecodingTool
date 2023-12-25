@@ -32,4 +32,4 @@ FilePath is the path to the telemetry binary file.
 
 ### Result of py ./DSHKTelemetryDecoder.py run  < FilePath >
 ![image](https://github.com/moonlight83340/PyNasaDSTelemetryDecodingTool/assets/6190795/35e39606-9191-4828-9d95-ae24bee5376c)
-
+result.txt contain the result of the command run with the telemetry bin file provided.
